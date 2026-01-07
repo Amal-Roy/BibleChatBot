@@ -1,0 +1,269 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bible Chartboard</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- FULL PAGE CSS -->
+  <style>
+    /* =========================
+       Bible Chartboard Theme
+       ========================= */
+
+    :root{
+      --bg-primary:#1A1A2E;
+      --text:#F0F0F0;
+      --muted:rgba(240,240,240,0.55);
+      --gold:#D4AF37;
+      --card:rgba(255,255,255,0.03);
+    }
+
+    *{box-sizing:border-box;}
+   
+  /* Subtle dark tone */
+
+
+    /* Header */
+    .page-header{
+      text-align:center;
+      padding:20px;
+      border-bottom:1px solid rgba(255,255,255,0.1);
+      backdrop-filter:blur(6px);
+    }
+    .page-title{
+      margin:0;
+      font-family:'Playfair Display',serif;
+      font-size:30px;
+      color:white;
+    }body {
+  margin:0;
+  font-family:'Inter',sans-serif;
+  color:var(--text);
+
+  background:
+    linear-gradient(to bottom,
+      rgba(0,0,0,0.10) 0%,
+      rgba(0,0,0,0.35) 30%,
+      rgba(0,0,0,0.80) 100%
+    ),
+    url("{% static 'bible_app/jesus-bg.png' %}");
+
+  background-size:cover;
+  background-position:center center;
+  background-repeat:no-repeat;
+  background-attachment:fixed;
+  background-color:#000;
+}
+
+
+    /* Main container */
+    .page-main {
+  min-height: calc(100vh - 100px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 40px 20px;
+}
+
+
+    /* Card */
+    .chartboard-card{
+      width:1000px;
+      max-width:1100px;
+      padding:3px;
+      border-radius:14px;
+      background:var(--card);
+      backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,0.05);
+      animation:fadeUp 0.8s forwards;
+    }
+
+    /* Text */
+    .card-title{
+      text-align:center;
+      font-family:'Playfair Display',serif;
+      font-size:28px;
+      margin-bottom:8px;
+    }
+    .card-sub{
+      text-align:center;
+      color:var(--muted);
+      margin-bottom:20px;
+    }
+
+    .accent{
+      color:var(--gold);
+      font-weight:bold;
+    }
+
+    /* Input + Button */
+    .search-row{
+      display:flex;
+      margin-bottom:20px;
+    }
+    .input-ref{
+      flex:1;
+      padding:14px;
+      border:none;
+      border-radius:10px 0 0 10px;
+      background:rgba(214, 214, 214, 0.04);
+      color:white;
+      outline:none;
+      
+  width: 400px;      /* make it wider */
+  height: 50px;      /* increase height */
+  font-size: 18px;   /* bigger text */
+  padding: 10px 15px;
+  color: white;      /* text color when typing */
+  background-color: #222; /* optional */
+  border: 1px solid #fff;
+  border-radius: 6px;
+}
+
+    
+    .btn-get{
+      padding:14px 20px;
+      background:var(--gold);
+      border:none;
+      border-radius:0 10px 10px 0;
+      font-weight:bold;
+      cursor:pointer;
+    }
+
+    /* Results */
+    .result-area{
+      margin-top:20px;
+      padding:18px;
+      background:rgba(255,255,255,0.04);
+      border-left:4px solid rgba(212,175,55,0.4);
+      border-radius:8px;
+      animation:fadeIn 0.6s;
+    }
+
+    .result-title{
+      font-family:'Playfair Display',serif;
+      font-size:20px;
+      margin-bottom:8px;
+    }
+
+    /* AI Summary */
+    .ai-summary{
+      margin-top:14px;
+      padding:12px;
+      border-radius:8px;
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.06);
+    }
+    .ai-title{
+      color:var(--gold);
+      margin-bottom:4px;
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(20px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    @keyframes fadeIn{
+      from{opacity:0;}
+      to{opacity:1;}
+    }
+  </style>
+</head>
+
+<body>
+
+
+<main class="page-main">
+  <section class="chartboard-card">
+    <h2 class="card-title">Bible Chartboard</h2>
+
+    <p class="card-sub">
+      Enter a scripture reference like <span class="accent">John 3:16</span> or <span class="accent">Psalm 23:4</span>
+    </p>
+
+    <div id="alertArea"></div>
+
+    <form class="search-row" onsubmit="return false;">
+      <input id="refInput" class="input-ref" placeholder="✦ Enter a Bible verse">
+      <button id="fetchBtn" class="btn-get" type="button">Get Verse</button>
+      
+    </form>
+
+    <div id="resultArea" class="result-area" style="display:none;">
+      <h3 id="refTitle" class="result-title"></h3>
+      <p id="verseText"></p>
+      
+
+      <div id="aiSummaryBlock" class="ai-summary" style="display:none;">
+        <h4 class="ai-title">AI Summary</h4>
+        <p id="aiSummary"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- SCRIPT -->
+<script>
+async function fetchVerse(q) {
+  const url = new URL("{% url 'bible_app:get_verse_api' %}", window.location.origin);
+  url.searchParams.set('q', q);
+
+  try { return await fetch(url).then(r => r.json()); }
+  catch { return { success:false, error:"Network error" }; }
+}
+
+document.getElementById("fetchBtn").onclick = async () => {
+  const q = refInput.value.trim();
+  const alertArea = document.getElementById("alertArea");
+
+  alertArea.innerHTML = "";
+
+  if (!q) {
+    alertArea.innerHTML = `<div style="color:#ffb3b3;">Please enter a reference.</div>`;
+    return;
+  }
+
+  fetchBtn.disabled = true;
+  fetchBtn.innerText = "Loading...";
+
+  const resp = await fetchVerse(q);
+
+  fetchBtn.disabled = false;
+  fetchBtn.innerText = "Get Verse";
+
+  if (!resp.success) {
+    alertArea.innerHTML = `<div style="color:#ff4d4d;">Error: ${resp.error}</div>`;
+    resultArea.style.display = "none";
+    return;
+  }
+
+  resultArea.style.display = "block";
+  refTitle.innerText = resp.data.reference;
+  verseText.innerText = resp.data.text;
+  timestamp.innerText = new Date().toLocaleString();
+
+  if (resp.data.ai_summary) {
+    aiSummaryBlock.style.display = "block";
+    aiSummary.innerText = resp.data.ai_summary;
+  } else {
+    aiSummaryBlock.style.display = "none";
+  }
+};
+
+refInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    fetchBtn.click();
+  }
+});
+</script>
+
+</body>
+</html>
